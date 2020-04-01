@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Learn Vue</title>
+  </head>
+
+  <body>
+    <div id="app">
+      {{name}}
+    </div>
+    <script>
+      let data = {
+        name: 'Roshan'
+      }
+      let el = document.querySelector('#app')
+      let template = el.innerHTML
+
+      const defineReactive = (obj, key, val) => {
+        Object.defineProperty(obj, key, {
+          get() {
+            return val
+          },
+          set(newVal) {
+            if (newVal === val) {
+              return
+            }
+
+            val = newVal
+          }
+        })
+      }
+
+      const render = () => {
+        el.innerHTML = template.replace(/\{\{(\w+)\}\}/g, (match, key) => data[key])
+      }
+
+      Object.keys(data).forEach(key => {
+        defineReactive(data, key, data[key])
+      })
+
+      render()
+
+      setTimeout(() => {
+        data.name = 'Joy'
+        render()
+      }, 1000)
+    </script>
+  </body>
+</html>
