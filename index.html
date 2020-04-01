@@ -10,41 +10,101 @@
       {{name}}
     </div>
     <script>
-      let data = {
-        name: 'Roshan'
-      }
-      let el = document.querySelector('#app')
-      let template = el.innerHTML
+      class Vue {
+        constructor({ el, data }) {
+          this.$el = document.querySelector(el)
+          this.data = data
 
-      const defineReactive = (obj, key, val) => {
-        Object.defineProperty(obj, key, {
-          get() {
-            return val
-          },
-          set(newVal) {
-            if (newVal === val) {
-              return
+          this.init()
+        }
+
+        init() {
+          if (this.$el) {
+            // 获取 dom
+            this.$fragment = this.node2Fragment(this.$el)
+
+            // 编译 dom
+            this.compileElement(this.$fragment)
+
+            // 回填 dom
+            this.$el.appendChild(this.$fragment)
+          }
+        }
+
+        node2Fragment(el) {
+          // 新建文档碎片
+          let fragment = document.createDocumentFragment()
+          let child
+
+          // 将原生结点拷贝至 fragment 中
+          while (child = el.firstChild) {
+            fragment.appendChild(child)
+          }
+
+          return fragment
+        }
+
+        compileElement(el) {
+          let { childNodes } = el
+
+          Array.from(childNodes).forEach(node => {
+            let text = node.textContent
+            let reg = /\{\{(.*)\}\}/
+
+            if (this.isElementNode(node)) {
+              this.compile(node)
+            } else if (this.isTextNode(node) && reg.test(text)) {
+              this.compileText(node, RegExp.$1)
             }
 
-            val = newVal
+            // 递归遍历子节点
+            if (node.childNodes && node.childNodes.length) {
+              this.compileElement(node)
+            }
+          })
+        }
+
+        isElementNode() {}
+
+        isTextNode() {}
+
+        isDirective() {}
+
+        isEventDirective() {}
+
+        compile(node) {
+          let { attributes } = node
+
+          if (!attributes) {
+            return
           }
-        })
+
+          Array.from(attributes).forEach(attr => {
+            // 指令以 v-xxx 命名
+            // 比如 <span v-text="content"></span>
+            let attrName = attr.name // v-text
+            let exp = attr.value // content
+
+            if (this.isDirective(attrName)) {
+              // 普通指令
+              let dir = attrName.split('v-')[1]
+              this[dir] && this[dir](node, this.$vm, exp)
+            }
+
+            if (this.isEventDirective(attrName)) {
+              // 事件指令
+              let dir = attrName.split('@')[1]
+              this.eventHandler(node, this.$vm, exp, dir)
+            }
+          })
+        }
+
+        compileText(node, exp) {
+          this.text(node, this.$vm, exp)
+        }
+
+        eventHandler() {}
       }
-
-      const render = () => {
-        el.innerHTML = template.replace(/\{\{(\w+)\}\}/g, (match, key) => data[key])
-      }
-
-      Object.keys(data).forEach(key => {
-        defineReactive(data, key, data[key])
-      })
-
-      render()
-
-      setTimeout(() => {
-        data.name = 'Joy'
-        render()
-      }, 1000)
     </script>
   </body>
 </html>
