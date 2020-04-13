@@ -15,7 +15,25 @@
           this.$el = document.querySelector(el)
           this.data = data
 
+          // 实现 this.xxx 指向 this.data.xxx
+          Object.keys(this.data).forEach(key => {
+            this.proxyData(key)
+          })
+
           this.init()
+        }
+
+        proxyData(key) {
+          Object.defineProperty(this, key, {
+            configurable: false,
+            enumerable: true,
+            get() {
+              return this.data[key]
+            },
+            set(val) {
+              this.data[key] = val
+            }
+          })
         }
 
         init() {
