@@ -64,13 +64,17 @@
           })
         }
 
-        isElementNode() {}
+        isElementNode(node) {
+          return node.nodeType === 1
+        }
 
-        isTextNode() {}
+        isTextNode(node) {
+          return node.nodeType === 3
+        }
 
-        isDirective() {}
-
-        isEventDirective() {}
+        compileText(node, exp) {
+          this.text(node, this, exp)
+        }
 
         compile(node) {
           let { attributes } = node
@@ -99,12 +103,42 @@
           })
         }
 
-        compileText(node, exp) {
-          this.text(node, this.$vm, exp)
+        isDirective(attrName) {
+          return /^v-(model|text)$/.test(attrName)
+        }
+
+        isEventDirective(attrName) {
+          return attrName.indexOf('@') === 0
         }
 
         eventHandler() {}
+
+        text(node, vm, exp) {
+          const value = this.data[exp]
+          dirText(node, value)
+
+          this.addWatcher(vm, exp, (newVal, oldVal) => {
+            dirText(node, newVal)
+          })
+        }
+
+        addWatcher(vm, exp, cb) {
+          new Watcher(vm, exp, cb)
+        }
       }
+
+      class Watcher {}
+
+      const dirText = (node, value) => {
+        node.textContent = value || ''
+      }
+
+      new Vue({
+        el: '#app',
+        data: {
+          name: 'roshan'
+        }
+      })
     </script>
   </body>
 </html>
