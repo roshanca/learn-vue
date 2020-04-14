@@ -8,17 +8,28 @@
   <body>
     <div id="app">
       {{name}}
+      <button @click="changeName">Change</button>
     </div>
     <script>
       class Vue {
-        constructor({ el, data }) {
+        constructor({ el, data, methods }) {
           this.$el = document.querySelector(el)
           this.data = data
 
-          // 实现 this.xxx 指向 this.data.xxx
           Object.keys(this.data).forEach(key => {
+            // 实现 this.xxx 指向 this.data.xxx
             this.proxyData(key)
+
+            // 将 this.data 相应式化
+            this.defineReactive(this.data, key, this.data[key])
           })
+
+          // 实现 this.xxx 指向 this.methods.xxx
+          for (const method in methods) {
+            if (methods.hasOwnProperty(method)) {
+              this[method] = methods[method]
+            }
+          }
 
           this.init()
         }
@@ -32,6 +43,33 @@
             },
             set(val) {
               this.data[key] = val
+            }
+          })
+        }
+
+        defineReactive(obj, key, val) {
+          const dep = new Dep()
+
+          Object.defineProperty(obj, key, {
+            configurable: true,
+            enumerable: true,
+            get() {
+              console.log('observer.get')
+              console.log(Dep.target)
+              if (Dep.target) {
+                dep.depend()
+              }
+
+              return val
+            },
+            set(newVal) {
+              console.log('observer.set: %s', newVal)
+              if (newVal === val) {
+                return
+              }
+
+              val = newVal
+              dep.notify()
             }
           })
         }
@@ -110,13 +148,13 @@
             if (this.isDirective(attrName)) {
               // 普通指令
               let dir = attrName.split('v-')[1]
-              this[dir] && this[dir](node, this.$vm, exp)
+              this[dir] && this[dir](node, this, exp, dir)
             }
 
             if (this.isEventDirective(attrName)) {
               // 事件指令
               let dir = attrName.split('@')[1]
-              this.eventHandler(node, this.$vm, exp, dir)
+              this.eventHandler(node, this, exp, dir)
             }
           })
         }
@@ -129,10 +167,17 @@
           return attrName.indexOf('@') === 0
         }
 
-        eventHandler() {}
+        eventHandler(node, vm, exp, dir) {
+          const eventType = dir
+          const fn = vm[exp] || function() {}
+
+          if (eventType) {
+            node.addEventListener(eventType, fn.bind(vm), false)
+          }
+        }
 
         text(node, vm, exp) {
-          const value = this.data[exp]
+          const value = this[exp]
           dirText(node, value)
 
           this.addWatcher(vm, exp, (newVal, oldVal) => {
@@ -145,16 +190,60 @@
         }
       }
 
-      class Watcher {}
-
       const dirText = (node, value) => {
         node.textContent = value || ''
+      }
+
+      let uid = 0
+
+      class Dep {
+        static target = null
+
+        constructor() {
+          this.id = uid++
+          this.subs = []
+        }
+
+        addSub(sub) {
+          this.subs.push(sub)
+        }
+
+        depend() {
+          Dep.target.addDep(this)
+        }
+
+        notify() {
+          for (const sub of this.subs) {
+            sub.update()
+          }
+        }
+      }
+
+      class Watcher {
+        constructor(vm, exp, cb) {
+          this.vm = vm
+          this.exp = exp
+          this.cb = cb
+          this.depIds = new Set()
+        }
+
+        addDep(dep) {
+          if (!this.depIds.has(dep.id)) {
+            this.depIds.add(dep.id)
+            dep.addSub(this)
+          }
+        }
       }
 
       new Vue({
         el: '#app',
         data: {
-          name: 'roshan'
+          name: 'Roshan'
+        },
+        methods: {
+          changeName() {
+            this.name = 'Vue user'
+          }
         }
       })
     </script>
