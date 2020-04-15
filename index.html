@@ -8,8 +8,9 @@
 
   <body>
     <div id="app">
-      {{name}}
+      <input type="text" v-model="name">
       <button @click="changeName">Change</button>
+      <p v-text="name"></p>
     </div>
     <script>
       import Vue from 'vue'

@@ -7,6 +7,9 @@ export default class Watcher {
     this.cb = cb
     this.depIds = new Set()
     this.getter = () => vm[exp]
+    this.setter = (vm, val) => {
+      vm[exp] = val
+    }
 
     this.value = this.get()
   }
@@ -23,6 +26,10 @@ export default class Watcher {
     const value = this.getter.call(this.vm, this.vm)
     Dep.target = null
     return value
+  }
+
+  set(val) {
+    this.setter.call(this.vm, this.vm, val)
   }
 
   update() {

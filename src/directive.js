@@ -15,7 +15,15 @@ export default class Directive {
       dir = this.attrName.split('v-')[1]
       // this[dir] && this[dir](this.node, this.vm, this.exp)
       const theDir = this[dir](this.node)
-      const watcher = new Watcher(this.vm, this.exp, theDir.update)
+      const watcher = (this.watcher = new Watcher(
+        this.vm,
+        this.exp,
+        theDir.update
+      ))
+
+      if (theDir.bind) {
+        theDir.bind()
+      }
 
       if (theDir.update) {
         theDir.update(watcher.value)
@@ -38,7 +46,7 @@ export default class Directive {
 
   eventHandler(node, vm, exp, dir) {
     const eventType = dir
-    const fn = vm[exp] || function() {}
+    const fn = vm[exp] || function () {}
 
     if (eventType) {
       node.addEventListener(eventType, fn.bind(vm), false)
@@ -49,6 +57,19 @@ export default class Directive {
     return {
       update: val => {
         node.textContent = val || ''
+      }
+    }
+  }
+
+  model(node) {
+    return {
+      bind: () => {
+        node.addEventListener('input', () => {
+          this.watcher.set(node.value)
+        })
+      },
+      update: val => {
+        node.value = val
       }
     }
   }

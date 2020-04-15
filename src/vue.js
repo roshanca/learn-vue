@@ -90,7 +90,7 @@ export default class Vue {
     let child
 
     // 将原生结点拷贝至 fragment 中
-    while (child = el.firstChild) {
+    while ((child = el.firstChild)) {
       fragment.appendChild(child)
     }
 
